@@ -3,26 +3,23 @@
 
 use core::panic::PanicInfo;
 
+mod vga_buffer;
+
 // Need to define a panic handler
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
-    loop {} // Just spin loop forever for now
+fn panic(info: &PanicInfo) -> ! {
+    println!("{}", info);
+    loop {} // Print panic info and loop forever
 }
-
-static HELLO: &[u8] = b"Hello World!";
 
 #[no_mangle] // Keep the name after the compiler
 pub extern "C" fn _start() -> ! {
     // We will exit and not return so `!` is appropriate
     // Use C calling convention & default entry point `_start`
-    let vga_buff = 0xb8000 as *mut u8; // Cast into a raw pointer
 
-    for (i, &byte) in HELLO.iter().enumerate() {
-        unsafe {
-            *vga_buff.offset(i as isize * 2) = byte; // Write byte in HELLO to offset of pointer
-            *vga_buff.offset(i as isize * 2 + 1) = 0xb; // Set color to light cyan
-        }
-    }
+    println!("The numbers are {} and {}", 42, 1.0 / 3.0);
+    println!("\n\n");
+    panic!("Some panic message");
 
     loop {}
 }

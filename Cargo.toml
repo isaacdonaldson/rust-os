@@ -8,3 +8,6 @@ authors = ["Isaac Donaldson <this@isaacdonaldson.com>"]
 
 [dependencies]
 bootloader = "0.9.8"
+volatile = "0.2.6"
+lazy_static = { version= "1.0", features = ["spin_no_std"]}
+spin = "0.9.2"
