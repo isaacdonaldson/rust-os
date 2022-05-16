@@ -41,11 +41,6 @@ pub extern "C" fn _start() -> ! {
     // this happens because it tries to push new interrupt frames on to a stack that is overflowed
     // and thus caausing a triple fault
     // the solution is to use known "good" stacks that we know have room for the new interrupt stack frames
-    fn stack_overflow() {
-        stack_overflow();
-    }
-
-    stack_overflow();
 
     #[cfg(test)]
     test_main();
