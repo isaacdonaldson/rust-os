@@ -42,11 +42,14 @@ lazy_static! {
     };
 }
 
+//load up the two segments
 pub fn init() {
     use x86_64::instructions::segmentation::{Segment, CS};
     use x86_64::instructions::tables::load_tss;
 
     GDT.0.load();
+
+    //needed unsafe as compiler cannot guarentee the safety
     unsafe {
         CS::set_reg(GDT.1.code_selector);
         load_tss(GDT.1.tss_selector);
