@@ -14,7 +14,7 @@ use core::panic::PanicInfo;
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
     println!("{}", info);
-    loop {} // Print panic info and loop forever
+    blog_os::hlt_loop(); // Print panic info and loop forever
 }
 
 // Need to define a panic handler
@@ -49,5 +49,5 @@ pub extern "C" fn _start() -> ! {
 
     // panic!("at the disco");
 
-    loop {}
+    blog_os::hlt_loop();
 }
