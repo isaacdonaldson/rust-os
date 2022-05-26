@@ -41,6 +41,10 @@ pub extern "C" fn _start() -> ! {
     // this happens because it tries to push new interrupt frames on to a stack that is overflowed
     // and thus caausing a triple fault
     // the solution is to use known "good" stacks that we know have room for the new interrupt stack frames
+    // let ptr = 0xdeadbeaf as *mut u32;
+    // unsafe {
+    //     *ptr = 42;
+    // }
 
     #[cfg(test)]
     test_main();
