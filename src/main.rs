@@ -6,6 +6,7 @@
 #![reexport_test_harness_main = "test_main"]
 
 use blog_os::println;
+use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 
 // Need to define a panic handler
@@ -27,24 +28,36 @@ fn panic(info: &PanicInfo) -> ! {
 
 /////////////////////////////////////////////
 // Main entry point for the kernel
-#[no_mangle] // Keep the name after the compiler
-pub extern "C" fn _start() -> ! {
+
+// providing a type checked signature for the
+// bootloader crate to call
+entry_point!(kernel_main);
+
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // We will exit and not return so `!` is appropriate
     // Use C calling convention & default entry point `_start`
+    use blog_os::memory;
+    use blog_os::memory::BootInfoFrameAllocator;
+    use x86_64::{structures::paging::Page, VirtAddr};
 
     println!("Hello World{}", "!");
 
     // initialize the kernel
     blog_os::init();
 
-    // trigger a page fault
-    // this happens because it tries to push new interrupt frames on to a stack that is overflowed
-    // and thus caausing a triple fault
-    // the solution is to use known "good" stacks that we know have room for the new interrupt stack frames
-    // let ptr = 0xdeadbeaf as *mut u32;
-    // unsafe {
-    //     *ptr = 42;
-    // }
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+
+    // choose address that needs a new frame allocated
+    let mut mapper = unsafe { memory::init(phys_mem_offset) };
+
+    // use allocator that can actually allocate a new frame
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+
+    let page = Page::containing_address(VirtAddr::new(0xdeadbeaf000));
+    memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
+
+    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
+    unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e) };
 
     #[cfg(test)]
     test_main();
