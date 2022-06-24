@@ -5,7 +5,7 @@
 #![test_runner(blog_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use blog_os::println;
+use blog_os::{println, memory::translate_addr};
 use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 
@@ -33,6 +33,41 @@ fn panic(info: &PanicInfo) -> ! {
 // bootloader crate to call
 entry_point!(kernel_main);
 
+fn kernel_main(boot_info: &'static BootInfo) -> ! {
+    // We will exit and not return so `!` is appropriate
+    // Use C calling convention & default entry point `_start`
+    use blog_os::memory::active_level4_table;
+    use x86_64::VirtAddr;
+
+    println!("Hello World{}", "!");
+
+    // initialize the kernel
+    blog_os::init();
+
+    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
+            
+    //              VGA-buffer | code page | stack page | virt address for phys addr 0      
+    let addresses = [0xb8000, 0x201008, 0x0100_0020_1a10, boot_info.physical_memory_offset];
+
+    for &address in &addresses {
+        let virt = VirtAddr::new(address);
+        let phys = unsafe { translate_addr(virt, phys_mem_offset) };
+        println!("{:?} -> {:?}\n", virt, phys);
+    }
+
+
+
+    #[cfg(test)]
+    test_main();
+
+    println!("The kernel did not crash and reaches this point");
+
+    // panic!("at the disco");
+
+    blog_os::hlt_loop();
+}
+
+/*
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // We will exit and not return so `!` is appropriate
     // Use C calling convention & default entry point `_start`
@@ -68,3 +103,4 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     blog_os::hlt_loop();
 }
+*/
