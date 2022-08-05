@@ -5,7 +5,11 @@
 #![test_runner(blog_os::test_runner)]
 #![reexport_test_harness_main = "test_main"]
 
-use blog_os::{println, memory::translate_addr};
+extern crate alloc;
+
+use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
+
+use blog_os::println;
 use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 
@@ -36,7 +40,8 @@ entry_point!(kernel_main);
 fn kernel_main(boot_info: &'static BootInfo) -> ! {
     // We will exit and not return so `!` is appropriate
     // Use C calling convention & default entry point `_start`
-    use blog_os::memory::active_level4_table;
+    use blog_os::allocator;
+    use blog_os::memory::{self, BootInfoFrameAllocator};
     use x86_64::VirtAddr;
 
     println!("Hello World{}", "!");
@@ -45,54 +50,28 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     blog_os::init();
 
     let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-            
-    //              VGA-buffer | code page | stack page | virt address for phys addr 0      
-    let addresses = [0xb8000, 0x201008, 0x0100_0020_1a10, boot_info.physical_memory_offset];
-
-    for &address in &addresses {
-        let virt = VirtAddr::new(address);
-        let phys = unsafe { translate_addr(virt, phys_mem_offset) };
-        println!("{:?} -> {:?}\n", virt, phys);
-    }
-
-
-
-    #[cfg(test)]
-    test_main();
-
-    println!("The kernel did not crash and reaches this point");
-
-    // panic!("at the disco");
-
-    blog_os::hlt_loop();
-}
-
-/*
-fn kernel_main(boot_info: &'static BootInfo) -> ! {
-    // We will exit and not return so `!` is appropriate
-    // Use C calling convention & default entry point `_start`
-    use blog_os::memory;
-    use blog_os::memory::BootInfoFrameAllocator;
-    use x86_64::{structures::paging::Page, VirtAddr};
-
-    println!("Hello World{}", "!");
-
-    // initialize the kernel
-    blog_os::init();
-
-    let phys_mem_offset = VirtAddr::new(boot_info.physical_memory_offset);
-
-    // choose address that needs a new frame allocated
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
+    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&&boot_info.memory_map) };
 
-    // use allocator that can actually allocate a new frame
-    let mut frame_allocator = unsafe { BootInfoFrameAllocator::init(&boot_info.memory_map) };
+    // Heap allocation
+    allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+    let heap_value = Box::new(41);
+    println!("heap_value at {:p}", heap_value);
 
-    let page = Page::containing_address(VirtAddr::new(0xdeadbeaf000));
-    memory::create_example_mapping(page, &mut mapper, &mut frame_allocator);
+    let mut vec = Vec::new();
+    for i in 0..500 {
+        vec.push(i);
+    }
+    println!("vec at {:p}", vec.as_slice());
 
-    let page_ptr: *mut u64 = page.start_address().as_mut_ptr();
-    unsafe { page_ptr.offset(400).write_volatile(0x_f021_f077_f065_f04e) };
+    let ref_counted = Rc::new(vec![1, 2, 3]);
+    let cloned_ref = ref_counted.clone();
+    println!(
+        "current reference count is {}",
+        Rc::strong_count(&cloned_ref)
+    );
+    core::mem::drop(ref_counted);
+    println!("reference count is {} now", Rc::strong_count(&cloned_ref));
 
     #[cfg(test)]
     test_main();
@@ -103,4 +82,3 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     blog_os::hlt_loop();
 }
-*/

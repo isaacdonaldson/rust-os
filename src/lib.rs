@@ -5,9 +5,14 @@
 #![reexport_test_harness_main = "test_main"]
 // needed for interrupts and exception handling
 #![feature(abi_x86_interrupt)]
+// needed for heap allocation
+#![feature(alloc_error_handler)]
+
+extern crate alloc;
 
 use core::panic::PanicInfo;
 
+pub mod allocator;
 pub mod gdt;
 pub mod interrupts;
 pub mod memory;
@@ -113,4 +118,11 @@ pub fn exit_qemu(exit_code: QemuExitCode) {
         let mut port = Port::new(0xf4);
         port.write(exit_code as u32);
     }
+}
+
+/////////////////////////////////////////////
+/// Heap Allocation
+#[alloc_error_handler]
+fn alloc_error_handler(layout: alloc::alloc::Layout) -> ! {
+    panic!("allocation error: {:?}", layout)
 }
