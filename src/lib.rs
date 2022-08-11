@@ -7,6 +7,8 @@
 #![feature(abi_x86_interrupt)]
 // needed for heap allocation
 #![feature(alloc_error_handler)]
+// Needed for mutable const references in linked list allocator
+#![feature(const_mut_refs)]
 
 extern crate alloc;
 
