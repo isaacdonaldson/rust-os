@@ -7,10 +7,12 @@ use x86_64::{
     VirtAddr,
 };
 
-use bump::BumpAllocator;
+// use bump::BumpAllocator;
+// use linked_list::LinkedListAllocator;
+use fixed_size_block::FixedSizeBlockAllocator;
 
 #[global_allocator]
-static ALLOCATOR: Locked<BumpAllocator> = Locked::new(BumpAllocator::new());
+static ALLOCATOR: Locked<FixedSizeBlockAllocator> = Locked::new(FixedSizeBlockAllocator::new());
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
 pub const HEAP_SIZE: usize = 100 * 1024; // 100 KiB
@@ -56,6 +58,8 @@ pub fn init_heap(
 ////////////////////////////////////////////////
 /// Allocators
 pub mod bump;
+pub mod fixed_size_block;
+pub mod linked_list;
 
 /// Wrapper around spin::Mutex
 pub struct Locked<A> {
