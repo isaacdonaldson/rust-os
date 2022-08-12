@@ -9,8 +9,8 @@
 - [x] CPU Execeptions
 - [x] Double Faults
 - [x] Hardware Interrupts
-- [ ] Introduction to Paging
-- [ ] Paging Implementation
-- [ ] Heap Allocation
-- [ ] Allocation Designs
+- [X] Introduction to Paging
+- [X] Paging Implementation
+- [X] Heap Allocation
+- [X] Allocation Designs
 - [ ] Async/Await
