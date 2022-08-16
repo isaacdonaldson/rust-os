@@ -13,4 +13,4 @@
 - [X] Paging Implementation
 - [X] Heap Allocation
 - [X] Allocation Designs
-- [ ] Async/Await
+- [X] Async/Await

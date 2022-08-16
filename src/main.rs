@@ -10,7 +10,10 @@ extern crate alloc;
 use alloc::{boxed::Box, rc::Rc, vec, vec::Vec};
 
 use blog_os::println;
+use blog_os::task::keyboard;
+use blog_os::task::{executor::Executor, Task};
 use bootloader::{entry_point, BootInfo};
+use core::ops::SubAssign;
 use core::panic::PanicInfo;
 
 // Need to define a panic handler
@@ -55,30 +58,23 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
 
     // Heap allocation
     allocator::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
-    let heap_value = Box::new(41);
-    println!("heap_value at {:p}", heap_value);
-
-    let mut vec = Vec::new();
-    for i in 0..500 {
-        vec.push(i);
-    }
-    println!("vec at {:p}", vec.as_slice());
-
-    let ref_counted = Rc::new(vec![1, 2, 3]);
-    let cloned_ref = ref_counted.clone();
-    println!(
-        "current reference count is {}",
-        Rc::strong_count(&cloned_ref)
-    );
-    core::mem::drop(ref_counted);
-    println!("reference count is {} now", Rc::strong_count(&cloned_ref));
 
     #[cfg(test)]
     test_main();
 
-    println!("The kernel did not crash and reaches this point");
+    let mut executor = Executor::new();
+    executor.spawn(Task::new(example_task()));
+    executor.spawn(Task::new(keyboard::print_keypresses()));
+    executor.run();
+}
 
-    // panic!("at the disco");
+//////////////////
+/// Async/Await
+async fn async_num() -> u32 {
+    42
+}
 
-    blog_os::hlt_loop();
+async fn example_task() {
+    let num = async_num().await;
+    println!("async num: {num}");
 }
